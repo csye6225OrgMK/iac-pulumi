@@ -23,7 +23,7 @@ This repository contains the Infrastructure as Code (IaC) setup for creating the
 
 2. install pulumi
 
-    ```choco install pulumi```
+    ```brew install pulumi```
 
     ```pulumi version``` to check version
 
@@ -60,6 +60,3 @@ This repository contains the Infrastructure as Code (IaC) setup for creating the
     and to refresh the code
 
     ```pulumi refresh```
-
-has context menu
-Compose
