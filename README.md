@@ -15,7 +15,7 @@ This repository contains the Infrastructure as Code (IaC) setup for creating the
     ```aws version``` to check version
 
    ```bash```
-   ```pip install awscli```
+   ```brew install awscli```
 
     ```aws configure --profile dev```
     ```aws configure --profile demo```
