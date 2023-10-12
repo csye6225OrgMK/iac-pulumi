@@ -1,7 +1,7 @@
 encryptionsalt: v1:eyU4mxdm7fE=:v1:rMpdfo15yyCeaQ8v:5ADUWtwrFqC4YqNQC++67OVDJsiv5Q==
 config:
   aws:accessKey: AKIAUYSGWWIUZC5ZVSCD
-  aws:region: us-east-1
+  aws:region: us-east-2
   aws:secretKey:
     secure: v1:TSmodVbdYpLRqTdm:BFTAdXJEY7KXacu8nRs2qO/osMMjo2lc44qUVHb+4akjz8znrUsGoTVqAGz5weqXXwQkw9q4iTs=
   db_publicRouteTable:cidrBlock: "0.0.0.0/0"
