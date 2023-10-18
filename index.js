@@ -191,35 +191,21 @@ const createSubnets = async () => {
     }
 
     // EC2 Instance
-
+    console.log("Ec2 instance creation started..");
     const ec2Instance = new aws.ec2.Instance("ec2Instance", {
-
         instanceType: "t2.micro", // Set the desired instance type
-
-        ami: "ami-0acb81b61e6061833", // Replace with your custom AMI ID
-
+        ami: "ami-0c72bc50179e283c6", // Replace with your custom AMI ID
         vpcSecurityGroupIds: [application_Security_Group.id],
-
         subnetId: db_publicSubnets[0].id, // Choose one of your public subnets
-
         vpcId: db_vpc.id,
-
         keyName: keyName,
-
         rootBlockDevice: {
-
             volumeSize: 25,
-
             volumeType: "gp2",
-
         },
-
         tags: {
-
             Name: "EC2Instance",
-
         },
-
     });
 };
 
