@@ -3,6 +3,8 @@ const aws = require("@pulumi/aws");
 const vpcCIDRBlock = new pulumi.Config("db_vpc").require("cidrBlock");
 const publicRouteTableCIDRBlock = new pulumi.Config("db_publicRouteTable").require("cidrBlock");
 const aws_region = new pulumi.Config("aws").require("region");
+const config1 = new pulumi.Config();
+const keyName = new pulumi.Config("db_vpc").require('key');
 
 // Function to get available AWS availability zones
 const getAvailableAvailabilityZones = async () => {
@@ -73,6 +75,7 @@ const createSubnets = async () => {
             vpcId: db_vpc.id,
             availabilityZone: availabilityZones[i],
             cidrBlock: publicSubnetCIDRBlock,
+            mapPublicIpOnLaunch: true, // Enable auto-assign public IPv4 address
             tags: {
                 Name: `db_publicSubnet${i + 1}`,
             },
@@ -92,6 +95,78 @@ const createSubnets = async () => {
 
         db_privateSubnets.push(privateSubnet);
     }
+
+    // Create an application security group
+
+    const application_Security_Group = new aws.ec2.SecurityGroup("application_Security_Group", {
+
+        description: "Application Security Group for web instances",
+
+        vpcId: db_vpc.id,
+
+        ingress:
+
+            [
+
+                        // Allow SSH (port 22) from anywhere
+
+                        {
+
+                            protocol: "tcp",
+
+                            fromPort: 22,
+
+                            toPort: 22,
+
+                            cidrBlocks: ["0.0.0.0/0"]
+
+                        },
+
+                        // Allow HTTP (port 80) from anywhere
+
+                        {
+
+                            protocol: "tcp",
+
+                            fromPort: 80,
+
+                            toPort: 80,
+
+                            cidrBlocks: ["0.0.0.0/0"]
+
+                        },
+
+                        // Allow HTTPS (port 443) from anywhere
+
+                        {
+
+                            protocol: "tcp",
+
+                            fromPort: 443,
+
+                            toPort: 443,
+
+                            cidrBlocks: ["0.0.0.0/0"]
+
+                        },
+
+                        // Replace '<your-application-port>' with the actual port your application runs on
+
+                        {
+
+                            protocol: "tcp",
+
+                            fromPort: 8080,
+
+                            toPort: 8080,
+
+                            cidrBlocks: ["0.0.0.0/0"]
+
+                        },
+
+        ],
+
+    });
 
     for (let i = 0; i < db_publicSubnets.length; i++) {
         new aws.ec2.RouteTableAssociation(`db_publicRouteTableAssociation-${i}`, {
@@ -114,6 +189,38 @@ const createSubnets = async () => {
             routeTableId: db_privateRouteTable.id,
         });
     }
+
+    // EC2 Instance
+
+    const ec2Instance = new aws.ec2.Instance("ec2Instance", {
+
+        instanceType: "t2.micro", // Set the desired instance type
+
+        ami: "ami-0acb81b61e6061833", // Replace with your custom AMI ID
+
+        vpcSecurityGroupIds: [application_Security_Group.id],
+
+        subnetId: db_publicSubnets[0].id, // Choose one of your public subnets
+
+        vpcId: db_vpc.id,
+
+        keyName: keyName,
+
+        rootBlockDevice: {
+
+            volumeSize: 25,
+
+            volumeType: "gp2",
+
+        },
+
+        tags: {
+
+            Name: "EC2Instance",
+
+        },
+
+    });
 };
 
 // Invoke the function to create subnets
