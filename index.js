@@ -99,73 +99,52 @@ const createSubnets = async () => {
     // Create an application security group
 
     const application_Security_Group = new aws.ec2.SecurityGroup("application_Security_Group", {
-
         description: "Application Security Group for web instances",
-
         vpcId: db_vpc.id,
-
-        ingress:
-
-            [
-
-                        // Allow SSH (port 22) from anywhere
-
-                        {
-
-                            protocol: "tcp",
-
-                            fromPort: 22,
-
-                            toPort: 22,
-
-                            cidrBlocks: ["0.0.0.0/0"]
-
-                        },
-
-                        // Allow HTTP (port 80) from anywhere
-
-                        {
-
-                            protocol: "tcp",
-
-                            fromPort: 80,
-
-                            toPort: 80,
-
-                            cidrBlocks: ["0.0.0.0/0"]
-
-                        },
-
-                        // Allow HTTPS (port 443) from anywhere
-
-                        {
-
-                            protocol: "tcp",
-
-                            fromPort: 443,
-
-                            toPort: 443,
-
-                            cidrBlocks: ["0.0.0.0/0"]
-
-                        },
-
-                        // Replace '<your-application-port>' with the actual port your application runs on
-
-                        {
-
-                            protocol: "tcp",
-
-                            fromPort: 8080,
-
-                            toPort: 8080,
-
-                            cidrBlocks: ["0.0.0.0/0"]
-
-                        },
-
+        ingress: [
+            // Allow SSH (port 22) from anywhere
+            {
+                protocol: "tcp",
+                fromPort: 22,
+                toPort: 22,
+                cidrBlocks: ["0.0.0.0/0"]
+            },
+            // Allow HTTP (port 80) from anywhere
+            {
+                protocol: "tcp",
+                fromPort: 80,
+                toPort: 80,
+                cidrBlocks: ["0.0.0.0/0"]
+            },
+            // Allow HTTPS (port 443) from anywhere
+            {
+                protocol: "tcp",
+                fromPort: 443,
+                toPort: 443,
+                cidrBlocks: ["0.0.0.0/0"]
+            },
+            // Replace '<your-application-port>' with the actual port your application runs on
+            {
+                protocol: "tcp",
+                fromPort: 8080,
+                toPort: 8080,
+                cidrBlocks: ["0.0.0.0/0"]
+            },
         ],
-
+        egress: [
+            {
+                protocol: "-1", // -1 means all protocols
+                fromPort: 0,
+                toPort: 0, // Set both fromPort and toPort to 0 to allow all ports
+                cidrBlocks: ["0.0.0.0/0"],
+            },
+        ],
+    
+        tags: {
+            Name: "SecurityGroupWebapp",
+        },
+    
+    
     });
 
     for (let i = 0; i < db_publicSubnets.length; i++) {
@@ -189,12 +168,132 @@ const createSubnets = async () => {
             routeTableId: db_privateRouteTable.id,
         });
     }
+    
+    
+    // ----------  RDS configuration starts here ...
+
+
+    // Create a security group for RDS instances
+    const databaseSecurityGroup = new aws.ec2.SecurityGroup("databaseSecurityGroup", {
+        vpcId: db_vpc.id,
+        ingress: [
+            // Add ingress rule for your application port
+            {
+                fromPort: 3306,
+                toPort: 3306,
+                protocol: "tcp",
+                securityGroups: [application_Security_Group.id],
+                cidrBlocks: ["0.0.0.0/0"]
+            },
+        ],
+        egress: [
+             // Add egress rule for your application port
+             {
+                fromPort: 3306,
+                toPort: 3306,
+                protocol: "tcp",
+                securityGroups: [application_Security_Group.id],
+                cidrBlocks: ["0.0.0.0/0"]
+            },
+        ]
+    });
+    await databaseSecurityGroup.id;
+
+    pulumi.log.info(
+        pulumi.interpolate`Database Security Group VPC ID: ${databaseSecurityGroup.id}`
+    );
+
+
+    // Create an RDS parameter group
+
+    const rdsParameterGroup = new aws.rds.ParameterGroup("myRdsParameterGroup", {
+        vpcId: db_vpc.id,
+        family: "mysql8.0", // Change this to match your database engine and version
+        name: "my-rds-parameter-group",
+        parameters: [
+            {
+                name: "character_set_server",
+                value: "utf8",
+            },
+            {
+                name: "collation_server",
+                value: "utf8_general_ci",
+            },
+        ],
+        tags: {
+            Name: "myRdsParameterGroup",
+        },
+    });
+
+
+    
+    const rdsSubnetGroup = new aws.rds.SubnetGroup("rds_subnet_group", {
+        subnetIds: db_privateSubnets.map(subnet => subnet.id),
+        tags: {
+            Name: "rds_subnet_group", // You can name it as desired
+        },
+    });
+
+
+    //RDS instance creation starts here...
+    const rdsInstance = new aws.rds.Instance("rds-instance", {
+        allocatedStorage: 20,
+        storageType: "gp2",
+        multiAz: false,
+        parameterGroupName: rdsParameterGroup.name,
+        identifier: "csye6225",
+        engine: "mysql", 
+        instanceClass: "db.t2.micro", // Choose the cheapest instance class
+        username: "root", 
+        password: "root#123", 
+        skipFinalSnapshot: true, // To avoid taking a final snapshot when deleting the RDS instance
+        publiclyAccessible: false, // Ensure it's not publicly accessible
+        dbSubnetGroupName: rdsSubnetGroup.name, 
+        vpcSecurityGroupIds: [databaseSecurityGroup.id], //ec2Instance.id.vpcSecurityGroupIds --> this does not attach the databseSecurityGroup, // Attach the security group
+        // subnetIds: db_privateSubnets.map(subnet => subnet.id), // Use private subnets
+        dbName: "csye6225", // Database name
+        tags: {
+            Name: "rds-db-instance",
+        },
+    });
+
+    pulumi.log.info(
+        pulumi.interpolate`RDS instance id: ${rdsInstance.id}`
+    );
+
+
+    // -------------- user database configuration
+
+    const DB_HOST = pulumi.interpolate`${rdsInstance.address}`;
+    console.log(DB_HOST);
+    // User data script to configure the EC2 instance
+    const userData = pulumi.interpolate`#!/bin/bash
+    # Define the path to the .env file
+    envFile="/opt/csye6225/madhura_kurhadkar_002769373_06/.env"
+    
+    # Check if the .env file exists
+    if [ -e "$envFile" ]; then
+      # If it exists, remove it
+      sudo rm "$envFile"
+    fi
+    
+    # Create the .env file
+    sudo touch "$envFile"
+    echo "DB_NAME='${rdsInstance.dbName}'" | sudo tee -a "$envFile"
+    echo "DB_HOST='${DB_HOST}'" | sudo tee -a "$envFile"
+    echo "DB_USERNAME='${rdsInstance.username}'" | sudo tee -a "$envFile"
+    echo "DB_PASSWORD='${rdsInstance.password}'" | sudo tee -a "$envFile"
+    echo "PORT='3306'" | sudo tee -a "$envFile"`;
+
+    pulumi.log.info(
+        pulumi.interpolate`DB data: DB_HOST, userDataScript - ${DB_HOST}, ${userData}`
+    );
 
     // EC2 Instance
     console.log("Ec2 instance creation started..");
     const ec2Instance = new aws.ec2.Instance("ec2Instance", {
         instanceType: "t2.micro", // Set the desired instance type
-        ami: "ami-0c72bc50179e283c6", // Replace with your custom AMI ID
+        ami: "ami-0e6b6e3a19f0c21db", // Replace with your custom AMI ID
         vpcSecurityGroupIds: [application_Security_Group.id],
         subnetId: db_publicSubnets[0].id, // Choose one of your public subnets
         vpcId: db_vpc.id,
@@ -203,6 +302,8 @@ const createSubnets = async () => {
             volumeSize: 25,
             volumeType: "gp2",
         },
+        protectFromTermination: false,
+        userData: userData, // Attach the user data script
         tags: {
             Name: "EC2Instance",
         },
