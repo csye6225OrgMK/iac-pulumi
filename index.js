@@ -325,7 +325,7 @@ let instanceProfile = new aws.iam.InstanceProfile("myInstanceProfile", {
     console.log("Ec2 instance creation started..");
     const ec2Instance = new aws.ec2.Instance("ec2Instance", {
         instanceType: "t2.micro", // Set the desired instance type
-        ami: "ami-00b4dac31167a55ae", // Replace with your custom AMI ID
+        ami: "ami-03d6b56fb958a83c2", // Replace with your custom AMI ID
         vpcSecurityGroupIds: [application_Security_Group.id],
         subnetId: db_publicSubnets[0].id, // Choose one of your public subnets
         vpcId: db_vpc.id,
