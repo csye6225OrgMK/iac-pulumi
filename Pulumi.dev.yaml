@@ -5,3 +5,6 @@ config:
   aws:region: us-east-1
   db_publicRouteTable:cidrBlock: "0.0.0.0/0"
   db_vpc:cidrBlock: "10.0.0.0/16"
+  route53:zoneId: "Z08941323ETTF2Y70FQBK"
+  route53:domainName: "dev.talentofpainting.info"
+  route53:ttl: 60

@@ -199,9 +199,9 @@ const createSubnets = async () => {
     });
     await databaseSecurityGroup.id;
 
-    pulumi.log.info(
-        pulumi.interpolate`Database Security Group VPC ID: ${databaseSecurityGroup.id}`
-    );
+    // pulumi.log.info(
+    //     pulumi.interpolate`Database Security Group VPC ID: ${databaseSecurityGroup.id}`
+    // );
 
 
     // Create an RDS parameter group
@@ -283,17 +283,49 @@ const createSubnets = async () => {
     echo "DB_HOST='${DB_HOST}'" | sudo tee -a "$envFile"
     echo "DB_USERNAME='${rdsInstance.username}'" | sudo tee -a "$envFile"
     echo "DB_PASSWORD='${rdsInstance.password}'" | sudo tee -a "$envFile"
-    echo "PORT='3306'" | sudo tee -a "$envFile"`;
+    echo "PORT='3306'" | sudo tee -a "$envFile"
 
-    pulumi.log.info(
-        pulumi.interpolate`DB data: DB_HOST, userDataScript - ${DB_HOST}, ${userData}`
-    );
+    sudo chown -R csye6225:csye6225 "$envFile"
+    #sudo chmod -R 755 "$envFile"
+
+    # Start the CloudWatch Agent and enable it to start on boot, below line is working line
+    sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/csye6225/madhura_kurhadkar_002769373_06/amazon-cloudwatch-agent.json
+    
+    #sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+    sudo systemctl enable amazon-cloudwatch-agent
+    sudo systemctl start amazon-cloudwatch-agent`;
+
+    
+// Create IAM Role for CloudWatch Agent
+const ec2CloudWatch = new aws.iam.Role("ec2CloudWatch", {
+    assumeRolePolicy: JSON.stringify({
+        Version: "2012-10-17",
+        Statement: [{
+            Action: "sts:AssumeRole",
+            Effect: "Allow",
+            Principal: {
+                Service: "ec2.amazonaws.com",
+            },
+        }],
+    }),
+});
+
+// Attach AmazonCloudWatchAgentServerPolicy to the IAM role
+const cloudWatchAgentPolicyAttachment = new aws.iam.RolePolicyAttachment("CloudWatchAgentPolicyAttachment", {
+    role: ec2CloudWatch,
+    policyArn: "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy",
+});
+
+
+let instanceProfile = new aws.iam.InstanceProfile("myInstanceProfile", {
+    role: ec2CloudWatch.name
+});
 
     // EC2 Instance
     console.log("Ec2 instance creation started..");
     const ec2Instance = new aws.ec2.Instance("ec2Instance", {
         instanceType: "t2.micro", // Set the desired instance type
-        ami: "ami-0e6b6e3a19f0c21db", // Replace with your custom AMI ID
+        ami: "ami-00b4dac31167a55ae", // Replace with your custom AMI ID
         vpcSecurityGroupIds: [application_Security_Group.id],
         subnetId: db_publicSubnets[0].id, // Choose one of your public subnets
         vpcId: db_vpc.id,
@@ -304,10 +336,27 @@ const createSubnets = async () => {
         },
         protectFromTermination: false,
         userData: userData, // Attach the user data script
+        iamInstanceProfile : instanceProfile.name, 
         tags: {
             Name: "EC2Instance",
         },
     });
+
+
+    // Create a Route53 record to point to the EC2 instance's public IP address
+
+    const zoneId = new pulumi.Config("route53").require("zoneId");
+    const domainName = new pulumi.Config("route53").require("domainName");
+    const ttl = new pulumi.Config("route53").require("ttl");
+
+    const record = new aws.route53.Record("ec2InstanceRecord", {
+    zoneId: zoneId, // Replace with your Route53 zone ID
+    name: domainName,
+    type: "A",
+    records: [ec2Instance.publicIp], // Use the public IP of your EC2 instance
+    ttl: ttl, // Adjust the TTL as needed
+    allowOverwrite:true,
+})
 };
 
 // Invoke the function to create subnets
