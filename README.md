@@ -2,13 +2,19 @@
 
 # Infrastructure as Code (IaC) with Pulumi
 
-This repository contains the Infrastructure as Code (IaC) setup for creating the necessary networking infrastructure in AWS using Pulumi.
+This repository contains Infrastructure as Code (IaC) setup for creating necessary networking infrastructure in AWS using Pulumi. Additionally, it creates resources in Google Cloud Platform (GCP) for a comprehensive setup.
 
 ## Prerequisites
 
-### Install and Configure AWS Command Line Interface (CLI)
+### Install AWS CLI and Pulumi
 
-1. Install the AWS Command Line Interface (CLI) on your development machine (laptop):
+Ensure AWS CLI and Pulumi are installed on your machine. Follow these steps:
+
+1. Install the [AWS CLI](https://aws.amazon.com/cli/) and configure profiles for `dev` and `demo`.
+
+2. Install [Pulumi](https://www.pulumi.com/docs/get-started/install/).
+   
+3. Install the AWS Command Line Interface (CLI) on your development machine (laptop):
 
     ```https://aws.amazon.com/cli/```
 
@@ -21,7 +27,7 @@ This repository contains the Infrastructure as Code (IaC) setup for creating the
     ```aws configure --profile demo```
 
 
-2. install pulumi
+4. install pulumi
 
     ```brew install pulumi```
 
@@ -29,7 +35,7 @@ This repository contains the Infrastructure as Code (IaC) setup for creating the
 
  
 
-3. set the pulumi locally & configure the user account
+5. set the pulumi locally & configure the user account
 
     ```pulumi login --local```
 
@@ -45,21 +51,46 @@ This repository contains the Infrastructure as Code (IaC) setup for creating the
 
  
 
-4. modify index.js
+## Getting Started
 
- 
+Follow these steps to set up and execute the code:
 
-5. update pulumi.dev.yaml with all the environment variables
+1. **Modify Configuration:**
+   Update `index.js` and `pulumi.dev.yaml`, `pulumi.demo.yaml` with your specific environment variables and configurations.
 
- 
+2. **Execute the Code:**
+   Run `pulumi up` to deploy the infrastructure. Use `pulumi refresh` to update the code.
 
-6. to execute the code block
+## Import SSL Certificate into AWS ACM
 
-    ```pulumi up```
+To import an SSL certificate into AWS ACM, use the provided command in the README.
 
-    and to refresh the code
+## Code Overview
 
-    ```pulumi refresh```
+The provided code in `index.js` demonstrates:
+
+AWS resources creation in `createAWSResources()` function, including:
+- Creating a Virtual Private Cloud (VPC) in AWS.
+- Setting up Amazon SNS and related AWS resources.
+- Creating security groups and subnets.
+- Configuration of Amazon RDS (Relational Database Service) instances.
+- Auto Scaling configurations for web application instances.
+- Setup of AWS Application Load Balancer (ALB).
+- Integration of Route53 for DNS record configuration.
+
+Additionally, GCP resources are provisioned in `createGCPResources()` function, including:
+
+- Google Cloud Storage bucket.
+- Google IAM service account and its permissions.
+- Lambda function setup to interact with GCP services.
+
+Feel free to explore the code for detailed implementation.
+
+## Important Notes
+
+- Ensure proper permissions and access keys are set before deploying resources.
+- Review IAM roles and policies for security and compliance.
+- Update and test your configurations in a safe environment before deploying to production.
 
 ## Import SSL Certificate into AWS ACM
 To import SSL certificate into AWS ACM, use the following command:
