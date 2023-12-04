@@ -8,7 +8,9 @@ const aws_region = new pulumi.Config("aws").require("region");
 const keyName = new pulumi.Config("db_vpc").require('key');
 const amiId = new pulumi.Config("ami").require("amiId");
 const userProfile = new pulumi.Config("aws").require("profile");
-
+const zoneId = new pulumi.Config("route53").require("zoneId");
+const domainName = new pulumi.Config("route53").require("domainName");
+const ttl = new pulumi.Config("route53").require("ttl");
 
 // Function to get available AWS availability zones
 const getAvailableAvailabilityZones = async () => {
@@ -351,6 +353,7 @@ const createAWSResources = async () => {
         securityGroups: [application_Security_Group.id],
         vpcSecurityGroupIds: [application_Security_Group.id],
         imageId: amiId,
+        version:"$Latest",
         instanceType: "t2.micro",
         keyName: keyName,
         userData: userDataBase64,
@@ -362,7 +365,7 @@ const createAWSResources = async () => {
             deleteOnTermination: true,
         },
         tags: {
-            Name: "EC2Instance",
+            Name: "webAppLaunchTemplate",
         },
     });
     // Create a target group for the ALB
@@ -386,6 +389,7 @@ const createAWSResources = async () => {
         vpcZoneIdentifiers: db_publicSubnets.map(s => s.id),
         healthCheckType: "EC2",
         desiredCapacity: 1,
+        version: "$Latest",
         maxSize: 3,
         minSize: 1,
         cooldown: 60,
@@ -394,6 +398,7 @@ const createAWSResources = async () => {
         protectFromScaleIn: false,
         launchTemplate: {
             id: webAppLaunchTemplate.id,
+            version:'$Latest'
           },
           tagSpecifications: [
             {
@@ -470,19 +475,29 @@ const createAWSResources = async () => {
     subnets: db_publicSubnets.map(subnet => subnet.id),
     enableDeletionProtection: false,
     });
+
+    const certificate = await aws.acm.getCertificate({
+        domain: domainName,
+        mostRecent: true,
+        statuses: ["ISSUED"],
+    });
+ 
+    const certificateArn = pulumi.interpolate`${certificate.arn}`;
     // Create a listener for the ALB
     const webAppListener = new aws.lb.Listener("webAppListener", {
         loadBalancerArn: webAppLoadBalancer.arn,
-        port: 80,
+        // port: 80,
+        port: 443,
+        protocol: "HTTPS",
         defaultActions: [{
             type: "forward",
             targetGroupArn: webAppTargetGroup.arn
         }],
+        sslPolicy: "ELBSecurityPolicy-2016-08",
+        certificateArn: certificateArn,
     });
     // Create a Route53 record to point to the EC2 instance's public IP address
-    const zoneId = new pulumi.Config("route53").require("zoneId");
-    const domainName = new pulumi.Config("route53").require("domainName");
-    const ttl = new pulumi.Config("route53").require("ttl");
+
     const record = new aws.route53.Record("ec2InstanceRecord", {
         zoneId: zoneId, 
         name: domainName,

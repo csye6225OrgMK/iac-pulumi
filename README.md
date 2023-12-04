@@ -60,3 +60,8 @@ This repository contains the Infrastructure as Code (IaC) setup for creating the
     and to refresh the code
 
     ```pulumi refresh```
+
+## Import SSL Certificate into AWS ACM
+To import SSL certificate into AWS ACM, use the following command:
+
+```aws acm import-certificate --certificate fileb:/path/to/demo.talentofpainting.info.crt --private-key fileb:/path/to/demo.talentofpainting.info_key.txt --certificate-chain fileb:/path/to/demo.talentofpainting.info.ca-bundle```
