@@ -96,3 +96,4 @@ Feel free to explore the code for detailed implementation.
 To import SSL certificate into AWS ACM, use the following command:
 
 ```aws acm import-certificate --certificate fileb:/path/to/demo.talentofpainting.info.crt --private-key fileb:/path/to/demo.talentofpainting.info_key.txt --certificate-chain fileb:/path/to/demo.talentofpainting.info.ca-bundle```
+
