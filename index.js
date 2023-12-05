@@ -129,8 +129,8 @@ const createAWSResources = async () => {
                 protocol: "tcp",
                 fromPort: 22,
                 toPort: 22,
-                // securityGroups: [loadBalancerSecurityGroup.id],
-                cidrBlocks: ["0.0.0.0/0"]
+                securityGroups: [loadBalancerSecurityGroup.id],
+                // cidrBlocks: ["0.0.0.0/0"]
             },
             {
                 protocol: "tcp",

@@ -1,6 +1,6 @@
 encryptionsalt: v1:eyU4mxdm7fE=:v1:rMpdfo15yyCeaQ8v:5ADUWtwrFqC4YqNQC++67OVDJsiv5Q==
 config:
-  ami:amiId: ami-047541bce525a24a6
+  ami:amiId: ami-02c94edaa20b6e86e
   aws:profile: dev
   aws:region: us-east-1
   db_publicRouteTable:cidrBlock: "0.0.0.0/0"
