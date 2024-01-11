@@ -2,6 +2,7 @@
 const pulumi = require("@pulumi/pulumi");
 const aws = require("@pulumi/aws");
 const gcp = require("@pulumi/gcp");
+require('dotenv').config();
 const vpcCIDRBlock = new pulumi.Config("db_vpc").require("cidrBlock");
 const publicRouteTableCIDRBlock = new pulumi.Config("db_publicRouteTable").require("cidrBlock");
 const aws_region = new pulumi.Config("aws").require("region");
@@ -239,13 +240,13 @@ const createAWSResources = async () => {
         identifier: "csye6225",
         engine: "mysql",
         instanceClass: "db.t2.micro",
-        username: "root",
-        password: "root#123",
+        username: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
         skipFinalSnapshot: true, // To avoid taking a final snapshot when deleting the RDS instance
         publiclyAccessible: false, // Ensuring it's not publicly accessible
         dbSubnetGroupName: rdsSubnetGroup.name,
         vpcSecurityGroupIds: [databaseSecurityGroup.id], //ec2Instance.id.vpcSecurityGroupIds --> this does not attach the databseSecurityGroup, // Attach the security group
-        dbName: "csye6225", // Database name
+        dbName: process.env.DB_NAME, // Database name
         tags: {
             Name: "rds-db-instance",
         },
