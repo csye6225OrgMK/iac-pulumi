@@ -49,6 +49,9 @@ Ensure AWS CLI and Pulumi are installed on your machine. Follow these steps:
 
     ```pulumi config set aws:region <region>```
 
+6. To secure your mailgun api key, use below command: 
+    ``` pulumi config set mailgun:apikey <<YOUR MAILGUN API KEY>> --secret ```
+
  
 
 ## Getting Started
@@ -91,6 +94,10 @@ Feel free to explore the code for detailed implementation.
 - Ensure proper permissions and access keys are set before deploying resources.
 - Review IAM roles and policies for security and compliance.
 - Update and test your configurations in a safe environment before deploying to production.
+- Sample .env file looks like below: 
+    DB_USER='your_db_user_name'
+    DB_PASSWORD='your_db_password'
+    DB_NAME='your_db_name'
 
 
 ## Import SSL Certificate into AWS ACM
