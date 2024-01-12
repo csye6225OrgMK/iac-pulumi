@@ -7,8 +7,7 @@ config:
   db_vpc:cidrBlock: "10.0.0.0/16"
   db_vpc:key: ec2keypairdemo
   gcp:project: democsye6225
-  mailgun:apikey:
-    secure: v1:ux/ffRmC3qDV4qCg:3p2UpKcquj/6EoQbQ7cgVhPZOW12VDEIhMAX+ZJQiUqFwz/6ntn9WuD/8g7R0Um7z+YcHM3xlnap4od6wGgUINu4
+  mailgun:apikey: ''
   mailgun:domain: 'talentofpainting.info'
   route53:domainName: "demo.talentofpainting.info"
   route53:ttl: "60"
